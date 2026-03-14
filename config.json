@@ -6,7 +6,7 @@
     "LINK-USD",
     "CRV-USD"
   ],
-  "seq_length": 10,
+  "seq_length": 40,
   "epochs": 50,
   "learning_rate": 0.001
 }
