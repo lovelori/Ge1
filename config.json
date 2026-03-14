@@ -1,0 +1,8 @@
+{
+  "tickers": [
+    "DOGE-USD"
+  ],
+  "seq_length": 10,
+  "epochs": 50,
+  "learning_rate": 0.001
+}

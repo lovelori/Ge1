@@ -1,0 +1,42 @@
+name: 6h Doge High-Freq Predictor
+
+on:
+  schedule:
+    # 每6小时运行一次 (UTC 0, 6, 12, 18 -> 北京时间 8, 14, 20, 2)
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
+
+jobs:
+  run-predictor:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # 允许回写训练好的模型
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run main script
+        env:
+          FEISHU_WEBHOOK: ${{ secrets.FEISHU_WEBHOOK }}
+        run: |
+          # 加上 -X utf8 确保中文推送不乱码
+          python -X utf8 main.py
+
+      - name: Commit and Push models
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add models/*.pth
+          git commit -m "Update trained models [skip ci]" || echo "No changes to commit"
+          git push origin main || echo "Push failed"
