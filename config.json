@@ -1,6 +1,10 @@
 {
   "tickers": [
-    "DOGE-USD"
+    "DOGE-USD",
+    "NEAR-USD",
+    "ETH-USD",
+    "LINK-USD",
+    "CRV-USD"
   ],
   "seq_length": 10,
   "epochs": 50,

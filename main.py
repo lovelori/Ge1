@@ -40,32 +40,34 @@ def main():
             continue
             
         logging.info(f"成功获取 {ticker} 数据。开始训练模型 (Epochs={epochs})...")
-        prediction = train_and_predict(X, y, X_infer, ticker, epochs, lr)
+        prediction, alpha = train_and_predict(X, y, X_infer, ticker, epochs, lr)
         
         signal = get_signal_symbol(prediction)
         results.append({
             "ticker": ticker,
             "prediction_value": prediction,
             "signal": signal,
-            "last_price": last_price
+            "last_price": last_price,
+            "alpha": alpha
         })
-        logging.info(f"{ticker} 预测走势: {prediction:.4f} -> {signal}")
+        logging.info(f"{ticker} 预测走势: {prediction:.4f} -> {signal} (Alpha: {alpha:+.2f}%)")
         
     # 生成报告内容
     if not results:
         message = "今日未成功获取或预测任何股票走势。"
     else:
-        message = "<h3>【AI 股票明日走势预测结果】</h3><hr>"
+        message = "<h3>【AI 股票 6h 走势预测与回测报告】</h3><hr>"
         message += "<ul>"
         for res in results:
             message += (
                 f"<li><b>{res['ticker']}</b>"
                 f"<br>&nbsp;- 当前最新收盘价: <code>{res['last_price']:.2f}</code>"
-                f"<br>&nbsp;- AI 方向预测值: <code>{res['prediction_value']:.4f}</code> (范围 -1~1)"
+                f"<br>&nbsp;- AI 历史 Alpha 收益: <code>{res['alpha']:+.2f}%</code>"
+                f"<br>&nbsp;- AI 下阶段方向预测: <code>{res['prediction_value']:.4f}</code>"
                 f"<br>&nbsp;- 预测信号: <b>{res['signal']}</b></li><br>"
             )
         message += "</ul>"
-        message += "<p><small>提示：预测结果仅供学习研究参考，不构成投资建议。</small></p>"
+        message += "<p><small>提示：Alpha 收益基于最近 20% 历史数据的模拟多空回测。预测结果进供参考。</small></p>"
         
     # 打印并将结果推送
     print("\n--- 完整输出结果 ---")
