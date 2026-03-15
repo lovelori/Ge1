@@ -51,21 +51,32 @@ def train_and_predict(X, y, X_infer, ticker, epochs=50, lr=0.001):
         X_val_tensor = torch.tensor(X_val, dtype=torch.float32).to(device)
         val_preds = model(X_val_tensor).cpu().numpy().flatten()
         
-        # 简单策略回测逻辑
-        strat_returns = []
+        # 策略修改：信号比例买入/卖出
+        cash = 100000.0
+        shares = 0.0
+        strat_values = [cash]
+        
         for i in range(len(val_preds)):
             pred = val_preds[i]
-            actual_move = y_val[i]
+            actual_move = y_val[i] # 这是下一时段涨幅
             
-            # 策略：>0.05做多，<-0.05做空，否则不持仓
-            weight = 0
-            if pred > 0.05: weight = 1.0
-            elif pred < -0.05: weight = -1.0
+            if pred > 0:
+                buy_ratio = min(pred, 1.0)
+                amount_to_spend = cash * buy_ratio
+                # 简化计算：不计手续费在Alpha初步评估中，或者计入
+                cash -= amount_to_spend
+                shares += amount_to_spend / 1.0 # 假设基准价1.0
+            elif pred < 0:
+                sell_ratio = min(abs(pred), 1.0)
+                cash += (shares * sell_ratio) * (1.0 + actual_move)
+                shares -= shares * sell_ratio
             
-            strat_returns.append(weight * actual_move)
+            # 更新持仓价值
+            shares *= (1.0 + actual_move)
+            strat_values.append(cash + shares)
             
-        total_strat_return = np.sum(strat_returns) * 100
-        total_market_return = np.sum(y_val) * 100
+        total_strat_return = (strat_values[-1] - strat_values[0]) / strat_values[0] * 100
+        total_market_return = np.sum(y_val) * 100 # 简单累加涨幅作为基准
         alpha = total_strat_return - total_market_return
         
         # 预测下一步

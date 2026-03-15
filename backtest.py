@@ -92,31 +92,37 @@ def backtest_strategy(ticker, seq_length=10, epochs=50):
     initial_value = 100000.0
     values = [initial_value]
     
-    current_weight = 0.0
+    cash = initial_value
+    shares = 0.0
+    values = [initial_value]
+    
     for i in range(len(predictions) - 1):
         pred = predictions[i]
+        current_price = prices_test[i]
+        next_price = prices_test[i+1]
         
-        # 模型输出回归分布修正，调低了敏感度阈值从而确保有交易动作
-        if pred > 0.05:
-            target_weight = 1.0   # 看多趋势建立，满仓做多
-        elif pred < -0.05:
-            target_weight = -1.0  # 看跌趋势建立，满仓做空
-        else:
-            target_weight = 0.0   # 震荡横盘不清晰，空仓观望
+        # 策略修改：信号为正，买入当前现金的比值；为负，卖出当前仓位的比值
+        if pred > 0:
+            # 限制买入比例最高为 100%
+            buy_ratio = min(pred, 1.0)
+            amount_to_spend = cash * buy_ratio
+            # 扣除手续费 (0.2%)
+            spent_after_fee = amount_to_spend * (1 - fee_rate)
+            new_shares = spent_after_fee / current_price
+            shares += new_shares
+            cash -= amount_to_spend
+        elif pred < 0:
+            # 限制卖出比例最高为 100% (取绝对值)
+            sell_ratio = min(abs(pred), 1.0)
+            shares_to_sell = shares * sell_ratio
+            # 扣除手续费 (0.2%)
+            revenue = shares_to_sell * current_price * (1 - fee_rate)
+            shares -= shares_to_sell
+            cash += revenue
             
-        # 计算交接成本：从买变成卖，要收两通续费。
-        turnover = abs(target_weight - current_weight)
-        cost = turnover * fee_rate
-        current_weight = target_weight
-        
-        # 获取第二天真实的标的涨跌幅度
-        market_return = (prices_test[i+1] - prices_test[i]) / prices_test[i]
-        
-        # 将真实涨幅乘上仓位权重 (即如果你做空，它如果跌了，负负得正你就赚钱了)
-        strat_return = current_weight * market_return - cost
-        
-        new_value = values[-1] * (1 + strat_return)
-        values.append(new_value)
+        # 计算当前总资产 (按下一时刻价格计算，以反映持仓损益)
+        current_total_value = cash + shares * next_price
+        values.append(current_total_value)
         
     final_value = values[-1]
     total_return = (final_value - initial_value) / initial_value * 100

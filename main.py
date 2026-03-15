@@ -52,29 +52,8 @@ def main():
         })
         logging.info(f"{ticker} 预测走势: {prediction:.4f} -> {signal} (Alpha: {alpha:+.2f}%)")
         
-    # 生成报告内容
-    if not results:
-        message = "今日未成功获取或预测任何股票走势。"
-    else:
-        message = "<h3>【AI 股票 6h 走势预测与回测报告】</h3><hr>"
-        message += "<ul>"
-        for res in results:
-            message += (
-                f"<li><b>{res['ticker']}</b>"
-                f"<br>&nbsp;- 当前最新收盘价: <code>{res['last_price']:.2f}</code>"
-                f"<br>&nbsp;- AI 历史 Alpha 收益: <code>{res['alpha']:+.2f}%</code>"
-                f"<br>&nbsp;- AI 下阶段方向预测: <code>{res['prediction_value']:.4f}</code>"
-                f"<br>&nbsp;- 预测信号: <b>{res['signal']}</b></li><br>"
-            )
-        message += "</ul>"
-        message += "<p><small>提示：Alpha 收益基于最近 20% 历史数据的模拟多空回测。预测结果进供参考。</small></p>"
-        
-    # 打印并将结果推送
-    print("\n--- 完整输出结果 ---")
-    print(message.replace('<h3>', '').replace('</h3>', '').replace('<hr>', '---').replace('<br>', '\n').replace('<li>', '').replace('</li>', '').replace('<ul>', '').replace('</ul>', '').replace('&nbsp;', ' ').replace('<b>', '').replace('</b>', '').replace('<code>', '').replace('</code>', '').replace('<p><small>', '').replace('</small></p>', ''))
-    print("--------------------\n")
-    
-    push_notification(message)
+    # 推送通知
+    push_notification(results)
 
 if __name__ == "__main__":
     main()
